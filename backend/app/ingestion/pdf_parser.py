@@ -4,6 +4,8 @@ from typing import Any
 import fitz
 from pydantic import BaseModel, Field
 
+from app.ingestion.chunker import TextChunk, chunk_pages
+
 
 class ParsedPage(BaseModel):
     page_number: int
@@ -19,6 +21,7 @@ class ParsedPaper(BaseModel):
     text: str
     character_count: int
     pages: list[ParsedPage] = Field(default_factory=list)
+    chunks: list[TextChunk] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -50,6 +53,7 @@ def parse_pdf_bytes(file_bytes: bytes, filename: str) -> ParsedPaper:
         text=full_text,
         character_count=len(full_text),
         pages=pages,
+        chunks=chunk_pages(pages),
         metadata={key: value for key, value in raw_metadata.items() if value},
     )
 
