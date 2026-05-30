@@ -5,3 +5,5 @@ pydantic-settings
 python-dotenv
 python-multipart
 PyMuPDF
+qdrant-client
+sentence-transformers

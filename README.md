@@ -1,9 +1,3 @@
-I refined the document around your actual idea:
-
-* replacing repeated encoder computation in RAG,
-* storing encoder hidden states directly,
-* using them as reusable semantic computation,
-* and extending the architecture into long-term neural memory research.
 
 # Persistent Encoder Memory Architecture
 
