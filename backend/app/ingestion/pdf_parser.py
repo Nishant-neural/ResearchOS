@@ -44,16 +44,24 @@ def parse_pdf_bytes(file_bytes: bytes, filename: str) -> ParsedPaper:
         document.close()
 
     full_text = "\n\n".join(page.text for page in pages if page.text)
+    title = _clean_metadata_value(raw_metadata.get("title"))
+    author = _clean_metadata_value(raw_metadata.get("author"))
 
     return ParsedPaper(
         filename=filename,
-        title=_clean_metadata_value(raw_metadata.get("title")),
-        author=_clean_metadata_value(raw_metadata.get("author")),
+        title=title,
+        author=author,
         page_count=len(pages),
         text=full_text,
         character_count=len(full_text),
         pages=pages,
-        chunks=chunk_pages(pages),
+        chunks=chunk_pages(
+            pages,
+            metadata={
+                "source_filename": filename,
+                "paper_title": title,
+            },
+        ),
         metadata={key: value for key, value in raw_metadata.items() if value},
     )
 
