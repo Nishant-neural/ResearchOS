@@ -11,10 +11,10 @@ def search(
 ):
     query_vector = embed_text(query)
 
-    results = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        limit=limit,
-    )
+    results = client.query_points(
+    collection_name=COLLECTION_NAME,
+    query=query_vector,
+    limit=limit,
+    ).points
 
     return results
