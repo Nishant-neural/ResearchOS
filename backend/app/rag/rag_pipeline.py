@@ -1,5 +1,5 @@
-from app.rag.llm import generate_response
 from app.rag.prompt_builder import build_rag_prompt
+from app.rag.transformer import generate_text
 from app.retrieval.retriever import search
 
 
@@ -22,7 +22,7 @@ def answer_query(
         contexts=contexts,
     )
 
-    answer = generate_response(prompt)
+    answer = generate_text(prompt)
 
     return {
         "query": query,

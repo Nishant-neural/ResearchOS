@@ -21,6 +21,7 @@ async def semantic_search(
     for result in results:
         formatted.append(
             {
+                "chunk_id": str(result.id),
                 "score": result.score,
                 "text": result.payload["text"],
                 "metadata": result.payload,
