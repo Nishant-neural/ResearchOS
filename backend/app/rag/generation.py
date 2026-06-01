@@ -25,8 +25,15 @@ def generate_from_hidden_states(
     Returns:
         Generated text
     """
+    instruction = (
+        "Answer the question directly using only the retrieved latent memory. "
+        "Do not summarize the whole document. "
+        "If the answer is not present, say unknown.\n\n"
+        f"Question: {query}\n"
+        "Answer:"
+    )
     query_inputs = tokenizer(
-        f"question: {query} answer using the retrieved context:",
+        instruction,
         return_tensors="pt",
         truncation=True,
         max_length=256,
@@ -68,9 +75,10 @@ def generate_from_hidden_states(
                 last_hidden_state=combined_hidden_states,
             ),
             attention_mask=combined_attention_mask,
-            max_new_tokens=256,
+            max_new_tokens=96,
             num_beams=4,
             early_stopping=True,
+            no_repeat_ngram_size=3,
         )
 
     return tokenizer.decode(
