@@ -40,6 +40,7 @@ class HiddenStateQueryRequest(BaseModel):
     query: str
     limit: int = 5
     aggregation_method: str = "sequence_concatenate"
+    conditioning_strategy: str = "framed_memory"
 
 
 @router.post("/ask")
@@ -94,7 +95,7 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
     1. Embed query using same encoder as retrieval
     2. Retrieve pre-computed hidden states from Qdrant
     3. Concatenate full token hidden states along the sequence dimension
-    4. Encode the query, prepend its hidden states, and generate with decoder cross-attention
+    4. Frame cached memory with encoded separator/instruction states and generate
     
     Aggregation methods:
     - sequence_concatenate: Join retrieved chunk memories along sequence length
@@ -106,6 +107,7 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
     query = request.query
     limit = request.limit
     method = request.aggregation_method
+    conditioning_strategy = request.conditioning_strategy
 
     start_time = time.time()
 
@@ -152,6 +154,7 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
             query=query,
             encoder_hidden_states=aggregated_memory["encoder_hidden_states"],
             attention_mask=aggregated_memory["attention_mask"],
+            conditioning_strategy=conditioning_strategy,
         )
         generation_time = time.time() - start_generation
 
@@ -170,6 +173,7 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
         "answer": answer,
         "contexts": contexts,
         "aggregation_method": method,
+        "conditioning_strategy": conditioning_strategy,
         "used_hidden_states": used_hidden_states,
         "num_chunks_with_hidden_states": len(available_hidden_states),
         "timing": {
