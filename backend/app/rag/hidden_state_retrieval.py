@@ -4,7 +4,11 @@ from app.rag.hidden_state_store import deserialize_hidden_state
 from app.retrieval.noise_filter import is_retrieval_noise
 from app.retrieval.hybrid_retriever import hybrid_search
 from app.retrieval.reranker import rerank
-from app.retrieval.qdrant_store import generate_chunk_id
+from app.retrieval.qdrant_store import (
+    generate_chunk_id,
+    client,
+    COLLECTION_NAME,
+)
 
 
 def retrieve_with_hidden_states(
@@ -39,35 +43,52 @@ def retrieve_with_hidden_states(
                 continue
             seen_ids.add(result.id)
             candidate_entries.append(
-                {
-                    "id": result.id,
-                    "text": result.payload.get("text"),
-                    "result": result,
-                }
-            )
+    {
+        "id": result.id,
+        "text": result.payload.get("text"),
+        "result": result,
+        "retrieval_type": "semantic",
+    }
+)
     
     # Add keyword results (TextChunk objects)
+   
     for chunk, score in hybrid_results.get("keyword", []):
         chunk_source = chunk.metadata.get("source_filename", "unknown")
+
         if source_filename and chunk_source != source_filename:
             continue
-        
+
         chunk_id = generate_chunk_id(
-            filename=chunk_source,
-            chunk_index=chunk.chunk_index,
-        )
-        
+        filename=chunk_source,
+        chunk_index=chunk.chunk_index,
+    )
+
         if chunk_id in seen_ids:
-            continue
+          continue
+
         seen_ids.add(chunk_id)
+
+    # IMPORTANT:
+    # Fetch the FULL Qdrant point so keyword-retrieved chunks
+    # can also access stored hidden states.
+        retrieved_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[chunk_id],
+    )
+
+        qdrant_result = retrieved_points[0] if retrieved_points else None
+
         candidate_entries.append(
-            {
-                "id": chunk_id,
-                "text": chunk.text,
-                "chunk": chunk,
-            }
-        )
-    
+        {
+            "id": chunk_id,
+            "text": chunk.text,
+            "chunk": chunk,
+            "result": qdrant_result,
+            "retrieval_type": "keyword",  # may contain hidden states
+        }
+    )
+
     texts_to_rerank = [entry["text"] for entry in candidate_entries]
     
     if not texts_to_rerank:
@@ -79,7 +100,7 @@ def retrieve_with_hidden_states(
     for ranked_text, rerank_score, original_index in reranked[:limit]:
         original_data = candidate_entries[original_index]
         
-        if "result" in original_data:
+        if original_data["result"] is not None:
             result = original_data["result"]
             payload = result.payload
             has_hidden_states = payload.get("has_hidden_states")
@@ -114,26 +135,7 @@ def retrieve_with_hidden_states(
                     "metadata": _metadata_from_payload(payload),
                 }
             )
-        else:
-            chunk = original_data["chunk"]
-            chunk_source = chunk.metadata.get("source_filename", "unknown")
-            chunk_id = original_data["id"]
-            
-            retrieved_data.append(
-                {
-                    "chunk_id": chunk_id,
-                    "text": chunk.text,
-                    "hidden_state": None,
-                    "attention_mask": None,
-                    "similarity_score": None,
-                    "rerank_score": float(rerank_score),
-                    "metadata": {
-                        "source": chunk_source,
-                        "chunk_index": chunk.chunk_index,
-                        "page": chunk.start_page,
-                    },
-                }
-            )
+      
 
     return retrieved_data
 
