@@ -1,0 +1,144 @@
+[
+  {
+    "source_filename": "paper1.pdf",
+    "id": "t1_q1",
+    "query": "What architecture did the paper introduce?",
+    "expected_answer": "The Transformer architecture based entirely on attention mechanisms.",
+    "expected_keywords": ["transformer", "attention"]
+  },
+  {
+    "source_filename": "paper1.pdf",
+    "id": "t1_q2",
+    "query": "Why did the authors remove recurrence?",
+    "expected_answer": "Recurrence limited parallelization and increased training time.",
+    "expected_keywords": ["parallelization", "recurrence"]
+  },
+  {
+    "source_filename": "paper1.pdf",
+    "id": "t1_q3",
+    "query": "What mechanism allows the model to focus on different token relationships?",
+    "expected_answer": "Multi-head attention.",
+    "expected_keywords": ["multi-head", "attention"]
+  },
+  {
+    "source_filename": "paper1.pdf",
+    "id": "t1_q4",
+    "query": "What benchmark tasks were used?",
+    "expected_answer": "Machine translation tasks such as WMT 2014 English-German and English-French.",
+    "expected_keywords": ["WMT", "translation"]
+  },
+  {
+    "source_filename": "paper1.pdf",
+    "id": "t1_q5",
+    "query": "Why are positional encodings necessary?",
+    "expected_answer": "Because the Transformer has no recurrence and needs positional information.",
+    "expected_keywords": ["positional", "recurrence"]
+  },
+  {
+    "source_filename": "paper1.pdf",
+    "id": "t1_q6",
+    "query": "What advantage did the Transformer achieve over RNNs?",
+    "expected_answer": "Better parallelization and improved performance.",
+    "expected_keywords": ["parallelization", "performance"]
+  },
+
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q1",
+    "query": "What is the main contribution of BERT?",
+    "expected_answer": "Deep bidirectional pretraining using transformers.",
+    "expected_keywords": ["bidirectional", "pretraining"]
+  },
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q2",
+    "query": "What training objective masks random words?",
+    "expected_answer": "Masked language modeling.",
+    "expected_keywords": ["masked", "language"]
+  },
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q3",
+    "query": "Why is bidirectional context important?",
+    "expected_answer": "It allows the model to use both left and right context simultaneously.",
+    "expected_keywords": ["left", "right", "context"]
+  },
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q4",
+    "query": "What second objective besides masked language modeling was used?",
+    "expected_answer": "Next sentence prediction.",
+    "expected_keywords": ["next", "sentence"]
+  },
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q5",
+    "query": "What limitation does the paper mention about previous language models?",
+    "expected_answer": "They were unidirectional.",
+    "expected_keywords": ["unidirectional"]
+  },
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q6",
+    "query": "What benchmark datasets did BERT improve on?",
+    "expected_answer": "GLUE, SQuAD, and other NLP benchmarks.",
+    "expected_keywords": ["GLUE", "SQuAD"]
+  },
+  {
+    "source_filename": "paper2.pdf",
+    "id": "t2_q7",
+    "query": "What token is commonly used for classification tasks in BERT?",
+    "expected_answer": "The CLS token.",
+    "expected_keywords": ["CLS"]
+  },
+
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q1",
+    "query": "What problem does RAG attempt to solve?",
+    "expected_answer": "Injecting external knowledge into generation models.",
+    "expected_keywords": ["external", "knowledge"]
+  },
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q2",
+    "query": "What two systems are combined in RAG?",
+    "expected_answer": "A retriever and a generator.",
+    "expected_keywords": ["retriever", "generator"]
+  },
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q3",
+    "query": "Why is retrieval useful for language models?",
+    "expected_answer": "It provides access to external updatable knowledge.",
+    "expected_keywords": ["external", "updatable"]
+  },
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q4",
+    "query": "What type of memory does RAG primarily use?",
+    "expected_answer": "Non-parametric external memory.",
+    "expected_keywords": ["non-parametric", "memory"]
+  },
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q5",
+    "query": "What limitation of parametric memory does RAG address?",
+    "expected_answer": "Difficulty updating knowledge stored in model weights.",
+    "expected_keywords": ["updating", "weights"]
+  },
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q6",
+    "query": "What benchmark tasks were evaluated in the paper?",
+    "expected_answer": "Open-domain question answering tasks.",
+    "expected_keywords": ["question", "answering"]
+  },
+  {
+    "source_filename": "paper3.pdf",
+    "id": "t3_q7",
+    "query": "How does retrieval influence generation in RAG?",
+    "expected_answer": "Retrieved documents condition the generator outputs.",
+    "expected_keywords": ["retrieved", "condition"]
+  }
+]

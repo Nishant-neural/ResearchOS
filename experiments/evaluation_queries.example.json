@@ -1,0 +1,23 @@
+[
+  {
+    "id": "q1",
+    "source_filename": "paper1.pdf",
+    "query": "What is the main contribution of the paper?",
+    "expected_answer": "Replace this with the short expected answer.",
+    "expected_keywords": ["replace", "with", "keywords"]
+  },
+  {
+    "id": "q2",
+    "source_filename": "paper1.pdf",
+    "query": "What dataset or benchmark does the paper use?",
+    "expected_answer": "Replace this with the short expected answer.",
+    "expected_keywords": ["dataset"]
+  },
+  {
+    "id": "q3",
+    "source_filename": "paper1.pdf",
+    "query": "What limitation does the paper mention?",
+    "expected_answer": "Replace this with the short expected answer.",
+    "expected_keywords": ["limitation"]
+  }
+]

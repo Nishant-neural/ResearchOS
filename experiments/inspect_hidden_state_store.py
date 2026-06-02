@@ -21,10 +21,14 @@ def main() -> None:
 
     total = len(points)
     hidden_ready = 0
+    source_filenames = set()
 
     print(f"Inspected points: {total}")
     for point in points:
         payload = point.payload or {}
+        source_filename = payload.get("source_filename")
+        if source_filename:
+            source_filenames.add(str(source_filename))
         has_hidden = bool(payload.get("has_hidden_states"))
         has_full = bool(payload.get("hidden_state_full"))
         has_mask = bool(payload.get("hidden_state_attention_mask"))
@@ -32,9 +36,10 @@ def main() -> None:
             hidden_ready += 1
 
         print(
-            "id={id} chunk_index={chunk} hidden={hidden} full={full} "
+            "id={id} source={source} chunk_index={chunk} hidden={hidden} full={full} "
             "mask={mask} shape={shape}".format(
                 id=point.id,
+                source=source_filename,
                 chunk=payload.get("chunk_index"),
                 hidden=has_hidden,
                 full=has_full,
@@ -44,6 +49,9 @@ def main() -> None:
         )
 
     print(f"\nHidden-state-ready chunks: {hidden_ready}/{total}")
+    print("\nSource filenames:")
+    for source_filename in sorted(source_filenames):
+        print(f"- {source_filename}")
 
 
 if __name__ == "__main__":

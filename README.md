@@ -741,3 +741,22 @@ The architecture attempts to transform transformers from:
 into:
 
 * systems that directly reuse semantic computation itself.
+
+# Context
+
+We are working on Persistent Encoder Memory Architecture.
+Read README.md and experiments/EXPERIMENT_LOG.md first.
+Current bottleneck is retrieval/chunk quality.
+Next goal: implement hybrid dense + BM25 retrieval and/or chunk quality audit.
+Do not revisit old routing/basic pipeline unless needed.
+
+
+# Handoff files for context
+
+README.md
+experiments/EXPERIMENT_LOG.md
+experiments/evaluation_queries.json
+experiments/results/latest_result.json
+backend/app/rag/generation.py
+backend/app/rag/hidden_state_retrieval.py
+backend/app/retrieval/retriever.py

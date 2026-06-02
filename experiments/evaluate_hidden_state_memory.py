@@ -35,9 +35,11 @@ DEFAULT_CONDITIONING_STRATEGY = "framed_memory"
 class EvaluationRow:
     query_id: str
     query: str
+    source_filename: str | None
     expected_answer: str
     expected_keywords: list[str]
     retrieved_chunk_ids: list[str]
+    retrieved_previews: list[dict[str, Any]]
     baseline_answer: str
     hidden_state_answer: str
     baseline_latency_ms: float
@@ -70,12 +72,30 @@ def main() -> None:
     for index, item in enumerate(queries, start=1):
         query = item["query"]
         query_id = str(item.get("id") or f"q{index}")
+        source_filename = get_source_filename(item)
         print(f"\n[{index}/{len(queries)}] {query}")
+        if source_filename:
+            print(f"source_filename={source_filename}")
 
-        retrieved_chunk_ids = search_chunk_ids(base_url, query, args.limit)
+        search_results = search_chunks(
+            base_url,
+            query,
+            args.limit,
+            source_filename,
+            args.preview_chars,
+        )
+        retrieved_chunk_ids = [
+            result["chunk_id"]
+            for result in search_results
+            if result.get("chunk_id")
+        ]
         baseline_response, baseline_latency_ms, baseline_error = post_json_timed(
             f"{base_url}/ask",
-            {"query": query, "limit": args.limit},
+            {
+                "query": query,
+                "limit": args.limit,
+                "source_filename": source_filename,
+            },
             timeout=args.timeout,
         )
         hidden_response, hidden_latency_ms, hidden_error = post_json_timed(
@@ -83,6 +103,7 @@ def main() -> None:
             {
                 "query": query,
                 "limit": args.limit,
+                "source_filename": source_filename,
                 "aggregation_method": args.aggregation_method,
                 "conditioning_strategy": args.conditioning_strategy,
             },
@@ -112,9 +133,11 @@ def main() -> None:
         row = EvaluationRow(
             query_id=query_id,
             query=query,
+            source_filename=source_filename,
             expected_answer=expected_answer,
             expected_keywords=expected_keywords,
             retrieved_chunk_ids=retrieved_chunk_ids,
+            retrieved_previews=search_results,
             baseline_answer=baseline_answer,
             hidden_state_answer=hidden_state_answer,
             baseline_latency_ms=round(baseline_latency_ms, 2),
@@ -158,6 +181,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--aggregation-method", default=DEFAULT_AGGREGATION_METHOD)
     parser.add_argument("--conditioning-strategy", default=DEFAULT_CONDITIONING_STRATEGY)
+    parser.add_argument("--preview-chars", type=int, default=280)
     parser.add_argument(
         "--interactive",
         action="store_true",
@@ -197,11 +221,29 @@ def load_queries(path: Path) -> list[dict[str, Any]]:
     return data
 
 
-def search_chunk_ids(base_url: str, query: str, limit: int) -> list[str]:
+def get_source_filename(item: dict[str, Any]) -> str | None:
+    source = item.get("source_filename") or item.get("paper")
+    if source is None:
+        return None
+    source = str(source).strip()
+    return source or None
+
+
+def search_chunks(
+    base_url: str,
+    query: str,
+    limit: int,
+    source_filename: str | None,
+    preview_chars: int,
+) -> list[dict[str, Any]]:
     try:
         response = requests.post(
             f"{base_url}/search",
-            json={"query": query, "limit": limit},
+            json={
+                "query": query,
+                "limit": limit,
+                "source_filename": source_filename,
+            },
             timeout=60,
         )
         response.raise_for_status()
@@ -209,11 +251,23 @@ def search_chunk_ids(base_url: str, query: str, limit: int) -> list[str]:
     except requests.RequestException:
         return []
 
-    return [
-        str(result.get("chunk_id") or result.get("metadata", {}).get("chunk_id"))
-        for result in payload.get("results", [])
-        if result.get("chunk_id") or result.get("metadata", {}).get("chunk_id")
-    ]
+    previews = []
+    for result in payload.get("results", []):
+        metadata = result.get("metadata", {}) or {}
+        text = str(result.get("text") or "")
+        previews.append(
+            {
+                "chunk_id": str(result.get("chunk_id") or metadata.get("chunk_id") or ""),
+                "score": result.get("score"),
+                "source_filename": metadata.get("source_filename"),
+                "chunk_index": metadata.get("chunk_index"),
+                "start_page": metadata.get("start_page"),
+                "end_page": metadata.get("end_page"),
+                "preview": shorten(text.replace("\n", " "), preview_chars),
+            }
+        )
+
+    return previews
 
 
 def post_json_timed(
@@ -344,6 +398,7 @@ def write_csv(path: Path, rows: list[EvaluationRow]) -> None:
             data = asdict(row)
             data["expected_keywords"] = "|".join(row.expected_keywords)
             data["retrieved_chunk_ids"] = "|".join(row.retrieved_chunk_ids)
+            data["retrieved_previews"] = json.dumps(row.retrieved_previews)
             writer.writerow(data)
 
 
