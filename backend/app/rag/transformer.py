@@ -20,12 +20,28 @@ def generate_text(prompt: str):
         prompt,
         return_tensors="pt",
         truncation=True,
-        max_length=1024,
+        max_length=768,
     )
+    # ADD HERE
+    token_count = inputs["input_ids"].shape[1]
 
+    print(f"[DEBUG] Prompt tokens: {token_count}")
+
+    decoded_prompt = tokenizer.decode(
+    inputs["input_ids"][0],
+    skip_special_tokens=False,
+)
+
+    print("\n[DEBUG] FINAL PROMPT:")
+    print(decoded_prompt[-3000:])
+    print("\n=====================\n")
+    
     outputs = model.generate(
         **inputs,
-        max_new_tokens=256,
+       max_new_tokens=128,
+    num_beams=4,
+    early_stopping=True,
+    no_repeat_ngram_size=3,
     )
 
     return tokenizer.decode(

@@ -176,7 +176,20 @@ def generate_from_text_with_encoding(
         truncation=True,
         max_length=1024,
     )
+        # ADD HERE
+    token_count = inputs["input_ids"].shape[1]
 
+    print(f"[DEBUG] Prompt tokens: {token_count}")
+
+    decoded_prompt = tokenizer.decode(
+    inputs["input_ids"][0],
+    skip_special_tokens=False,
+)
+
+    print("\n[DEBUG] FINAL PROMPT:")
+    print(decoded_prompt[-3000:])
+    print("\n=====================\n")
+    
     outputs = model.generate(
         **inputs,
         max_new_tokens=256,

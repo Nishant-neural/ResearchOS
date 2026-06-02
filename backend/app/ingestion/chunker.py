@@ -16,7 +16,7 @@ class TextChunk(BaseModel):
 
 
 class ChunkingConfig(BaseModel):
-    max_tokens: int = 512
+    max_tokens: int = 256
     overlap_tokens: int = 64
 
 

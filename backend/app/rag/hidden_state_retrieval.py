@@ -99,7 +99,15 @@ def retrieve_with_hidden_states(
     retrieved_data = []
     for ranked_text, rerank_score, original_index in reranked[:limit]:
         original_data = candidate_entries[original_index]
-        
+        print("\n[DEBUG] RERANK VALIDATION")
+
+        print("RERANKED TEXT:")
+        print(ranked_text[:400])
+
+        print("\nMATCHED ORIGINAL:")
+        print(original_data["text"][:400])
+
+        print("=" * 80)
         if original_data["result"] is not None:
             result = original_data["result"]
             payload = result.payload
@@ -171,6 +179,16 @@ def aggregate_hidden_states(
     encoder_hidden_states = torch.cat(hidden_states, dim=0).unsqueeze(0)
     attention_mask = torch.cat(attention_masks, dim=0).unsqueeze(0)
 
+    print("\n[DEBUG] HIDDEN STATE AGGREGATION")
+
+    for i, state in enumerate(hidden_states):
+        print(f"Chunk {i} hidden shape: {state.shape}")
+
+    print(f"Final encoder hidden shape: {encoder_hidden_states.shape}")
+    print(f"Final attention mask shape: {attention_mask.shape}")
+
+    print("\n=====================\n")
+    
     return {
         "encoder_hidden_states": encoder_hidden_states,
         "attention_mask": attention_mask,
