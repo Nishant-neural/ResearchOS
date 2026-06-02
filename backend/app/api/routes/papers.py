@@ -7,6 +7,7 @@ from app.retrieval.qdrant_store import (
     initialize_collection,
     store_chunks,
 )
+from app.retrieval.keyword_search import bm25
 
 
 router = APIRouter()
@@ -48,7 +49,14 @@ async def upload_paper(
 
         initialize_collection()
 
+        # Add source_filename to chunk metadata before storing
+        for chunk in parsed_paper.chunks:
+            chunk.metadata["source_filename"] = file.filename
+
         store_chunks(parsed_paper.chunks)
+
+        # Also add chunks to BM25 retriever for keyword search
+        bm25.add_chunks(parsed_paper.chunks)
 
         if parsed_paper.chunks:
             texts = [chunk.text for chunk in parsed_paper.chunks]

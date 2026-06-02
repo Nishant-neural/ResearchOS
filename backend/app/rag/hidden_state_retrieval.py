@@ -1,59 +1,139 @@
 import torch
 
 from app.rag.hidden_state_store import deserialize_hidden_state
-from app.retrieval.qdrant_store import COLLECTION_NAME, client
+from app.retrieval.noise_filter import is_retrieval_noise
+from app.retrieval.hybrid_retriever import hybrid_search
+from app.retrieval.reranker import rerank
+from app.retrieval.qdrant_store import generate_chunk_id
 
 
 def retrieve_with_hidden_states(
-    query_embedding: list[float],
+    query: str,
     limit: int = 5,
+    source_filename: str | None = None,
 ):
     """
-    Retrieve chunks by similarity and return pre-computed full token states.
+    Retrieve chunks using hybrid retrieval (semantic + keyword) with reranking,
+    then return pre-computed full token states.
 
     The document encoder is not run here. Retrieved hidden states are shaped
     [seq_len, hidden_dim] so they can be assembled into decoder memory.
     """
-    results = client.query_points(
-        collection_name=COLLECTION_NAME,
-        query=query_embedding,
-        limit=limit,
-    ).points
-
+    candidate_limit = max(limit * 6, limit + 10)
+    
+    # Step 1: Hybrid retrieval (semantic + keyword)
+    hybrid_results = hybrid_search(
+        query=query,
+        limit=candidate_limit,
+        source_filename=source_filename,
+    )
+    
+    # Step 2: Combine semantic and keyword results
+    candidate_entries = []
+    seen_ids = set()
+    
+    # Add semantic results
+    for result in hybrid_results.get("semantic", []):
+        if not is_retrieval_noise(result.payload):
+            if source_filename and result.payload.get("source_filename") != source_filename:
+                continue
+            seen_ids.add(result.id)
+            candidate_entries.append(
+                {
+                    "id": result.id,
+                    "text": result.payload.get("text"),
+                    "result": result,
+                }
+            )
+    
+    # Add keyword results (TextChunk objects)
+    for chunk, score in hybrid_results.get("keyword", []):
+        chunk_source = chunk.metadata.get("source_filename", "unknown")
+        if source_filename and chunk_source != source_filename:
+            continue
+        
+        chunk_id = generate_chunk_id(
+            filename=chunk_source,
+            chunk_index=chunk.chunk_index,
+        )
+        
+        if chunk_id in seen_ids:
+            continue
+        seen_ids.add(chunk_id)
+        candidate_entries.append(
+            {
+                "id": chunk_id,
+                "text": chunk.text,
+                "chunk": chunk,
+            }
+        )
+    
+    texts_to_rerank = [entry["text"] for entry in candidate_entries]
+    
+    if not texts_to_rerank:
+        return []
+    
+    reranked = rerank(query, texts_to_rerank[:candidate_limit])
+    
     retrieved_data = []
+    for ranked_text, rerank_score, original_index in reranked[:limit]:
+        original_data = candidate_entries[original_index]
+        
+        if "result" in original_data:
+            result = original_data["result"]
+            payload = result.payload
+            has_hidden_states = payload.get("has_hidden_states")
+            hidden_state_json = payload.get("hidden_state_full")
+            attention_mask_json = payload.get("hidden_state_attention_mask")
 
-    for result in results:
-        payload = result.payload
-        has_hidden_states = payload.get("has_hidden_states")
-        hidden_state_json = payload.get("hidden_state_full")
-        attention_mask_json = payload.get("hidden_state_attention_mask")
+            if has_hidden_states and hidden_state_json and attention_mask_json:
+                hidden_state = deserialize_hidden_state(hidden_state_json)
+                attention_mask = deserialize_hidden_state(attention_mask_json).long()
 
-        if has_hidden_states and hidden_state_json and attention_mask_json:
-            hidden_state = deserialize_hidden_state(hidden_state_json)
-            attention_mask = deserialize_hidden_state(attention_mask_json).long()
+                retrieved_data.append(
+                    {
+                        "chunk_id": result.id,
+                        "text": payload.get("text"),
+                        "hidden_state": hidden_state,
+                        "attention_mask": attention_mask,
+                        "similarity_score": result.score,
+                        "rerank_score": float(rerank_score),
+                        "metadata": _metadata_from_payload(payload),
+                    }
+                )
+                continue
 
             retrieved_data.append(
                 {
                     "chunk_id": result.id,
                     "text": payload.get("text"),
-                    "hidden_state": hidden_state,
-                    "attention_mask": attention_mask,
+                    "hidden_state": None,
+                    "attention_mask": None,
                     "similarity_score": result.score,
+                    "rerank_score": float(rerank_score),
                     "metadata": _metadata_from_payload(payload),
                 }
             )
-            continue
-
-        retrieved_data.append(
-            {
-                "chunk_id": result.id,
-                "text": payload.get("text"),
-                "hidden_state": None,
-                "attention_mask": None,
-                "similarity_score": result.score,
-                "metadata": _metadata_from_payload(payload),
-            }
-        )
+        else:
+            chunk = original_data["chunk"]
+            chunk_source = chunk.metadata.get("source_filename", "unknown")
+            chunk_id = original_data["id"]
+            
+            retrieved_data.append(
+                {
+                    "chunk_id": chunk_id,
+                    "text": chunk.text,
+                    "hidden_state": None,
+                    "attention_mask": None,
+                    "similarity_score": None,
+                    "rerank_score": float(rerank_score),
+                    "metadata": {
+                        "source": chunk_source,
+                        "chunk_index": chunk.chunk_index,
+                        "page": chunk.start_page,
+                    },
+                }
+            )
 
     return retrieved_data
 

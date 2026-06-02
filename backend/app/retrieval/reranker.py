@@ -14,9 +14,12 @@ def rerank(query, chunks):
     scores = model.predict(pairs)
 
     ranked = sorted(
-        zip(chunks, scores),
-        key=lambda x: x[1],
+        enumerate(zip(chunks, scores)),
+        key=lambda item: item[1][1],
         reverse=True,
     )
 
-    return ranked
+    return [
+        (chunk, score, index)
+        for index, (chunk, score) in ranked
+    ]

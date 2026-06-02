@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.retrieval.models import SearchRequest
-from app.retrieval.retriever import search
+from app.retrieval.retriever import search_hybrid_with_reranking
 
 
 router = APIRouter()
@@ -11,9 +11,10 @@ router = APIRouter()
 async def semantic_search(
     request: SearchRequest,
 ):
-    results = search(
+    results = search_hybrid_with_reranking(
         query=request.query,
         limit=request.limit,
+        source_filename=request.source_filename,
     )
 
     formatted = []
@@ -30,5 +31,6 @@ async def semantic_search(
 
     return {
         "query": request.query,
+        "source_filename": request.source_filename,
         "results": formatted,
     }

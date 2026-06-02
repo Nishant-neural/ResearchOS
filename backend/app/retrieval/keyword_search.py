@@ -40,3 +40,7 @@ class BM25Retriever:
         )
 
         return ranked[:limit]
+
+
+# Create a singleton instance for global use
+bm25 = BM25Retriever()

@@ -39,6 +39,7 @@ class PreprocessRequest(BaseModel):
 class HiddenStateQueryRequest(BaseModel):
     query: str
     limit: int = 5
+    source_filename: str | None = None
     aggregation_method: str = "sequence_concatenate"
     conditioning_strategy: str = "framed_memory"
 
@@ -50,6 +51,7 @@ async def ask_question(
     return answer_query(
         query=request.query,
         limit=request.limit,
+        source_filename=request.source_filename,
     )
 
 
@@ -106,20 +108,18 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
     """
     query = request.query
     limit = request.limit
+    source_filename = request.source_filename
     method = request.aggregation_method
     conditioning_strategy = request.conditioning_strategy
 
     start_time = time.time()
 
-    # Step 1: Embed query for retrieval
-    query_embedding = embed_text(query)
-    embedding_time = time.time() - start_time
-
-    # Step 2: Retrieve pre-computed hidden states
+    # Step 1: Retrieve pre-computed hidden states with hybrid retrieval + reranking
     start_retrieval = time.time()
     retrieved = retrieve_with_hidden_states(
-        query_embedding=query_embedding,
+        query=query,
         limit=limit,
+        source_filename=source_filename,
     )
     retrieval_time = time.time() - start_retrieval
 
@@ -170,6 +170,7 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
 
     return {
         "query": query,
+        "source_filename": source_filename,
         "answer": answer,
         "contexts": contexts,
         "aggregation_method": method,
@@ -177,7 +178,6 @@ async def ask_with_hidden_states(request: HiddenStateQueryRequest):
         "used_hidden_states": used_hidden_states,
         "num_chunks_with_hidden_states": len(available_hidden_states),
         "timing": {
-            "embedding_ms": round(embedding_time * 1000, 2),
             "retrieval_ms": round(retrieval_time * 1000, 2),
             "aggregation_ms": round(aggregation_time * 1000, 2),
             "generation_ms": round(generation_time * 1000, 2),

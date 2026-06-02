@@ -11,7 +11,10 @@ MODEL_NAME = "google/flan-t5-base"
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
-model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+model = AutoModelForSeq2SeqLM.from_pretrained(
+    MODEL_NAME,
+    tie_word_embeddings=False,
+)
 
 model.eval()
 
